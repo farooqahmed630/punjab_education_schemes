@@ -1,0 +1,26 @@
+name: simple_ad_site
+description: Simple click -> ad -> content Flutter web site template
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^8.2.1   # ✅ 2 spaces indent, colon (:) ke baad space
+  sizer: ^3.0.5
+  url_launcher: ^6.3.2
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/cm_image.png  
+    -  assets/ 
+    # ✅ 2 spaces indent
