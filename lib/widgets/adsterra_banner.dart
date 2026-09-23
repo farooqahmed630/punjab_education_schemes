@@ -1,7 +1,7 @@
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+
+import '../platform/ad_iframe_registrar.dart';
 
 // ---- DEBUG NOTE (no behavior change) ----
 // This widget renders an <iframe> via HtmlElementView. On Flutter Web,
@@ -13,6 +13,11 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 // scroll the page and watch DevTools Performance tab (or the
 // [PERF] JANKY FRAME logs from home_page.dart) specifically around the
 // moment the ad banner scrolls into/out of view.
+//
+// PHONE NOTE: ye HTML <iframe> ad sirf Flutter Web par kaam karta hai.
+// Android/iOS app mein Adsterra ka ye banner render nahi hota (koi
+// alag native ad SDK chahiye hoga), is liye phone build par ye widget
+// khud khali/placeholder box dikha deta hai — build fail nahi hoga.
 
 // Reusable Adsterra BANNER widget — kahin bhi use kar sakte hain, bas
 // zoneKey/width/height pass karen. Zone key placeholder hone tak
@@ -42,7 +47,7 @@ class AdsterraBanner extends StatefulWidget {
 }
 
 class _AdsterraBannerState extends State<AdsterraBanner> {
-  late final String _viewType;
+  String? _viewType;
 
   @override
   void initState() {
@@ -50,44 +55,32 @@ class _AdsterraBannerState extends State<AdsterraBanner> {
     if (kDebugMode) {
       debugPrint('[PERF] AdsterraBanner(${widget.zoneKey}) mounted — an iframe platform view is now live inside the scroll area.');
     }
-    _viewType = 'adsterra-banner-${widget.zoneKey}-${DateTime.now().microsecondsSinceEpoch}';
-    ui_web.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
-      final iframe = html.IFrameElement()
-        ..style.border = 'none'
-        ..style.width = '${widget.width.toInt()}px'
-        ..style.height = '${widget.height.toInt()}px'
-        ..srcdoc = '''
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  html, body { margin:0; padding:0; background:transparent; display:flex;
-    align-items:center; justify-content:center; overflow:hidden; }
-</style>
-</head>
-<body>
-<script type="text/javascript">
-  atOptions = {
-    'key' : '${widget.zoneKey}',
-    'format' : 'iframe',
-    'height' : ${widget.height.toInt()},
-    'width' : ${widget.width.toInt()},
-    'params' : {}
-  };
-</script>
-<script type="text/javascript" src="https://www.highperformanceformat.com/${widget.zoneKey}/invoke.js"></script>
-</body>
-</html>
-''';
-      return iframe;
-    });
+    if (kIsWeb) {
+      _viewType = registerAdIframeView(
+        zoneKey: widget.zoneKey,
+        width: widget.width.toInt(),
+        height: widget.height.toInt(),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget.zoneKey.startsWith('YOUR_ADSTERRA')) {
       return const SizedBox.shrink();
+    }
+    if (!kIsWeb || _viewType == null) {
+      // Phone app: real iframe ad nahi bante, is liye halka placeholder.
+      return SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+      );
     }
     if (widget.isScrolling) {
       // Scroll ke dauran real iframe ki jagah simple placeholder —
@@ -104,6 +97,6 @@ class _AdsterraBannerState extends State<AdsterraBanner> {
         ),
       );
     }
-    return SizedBox(width: widget.width, height: widget.height, child: HtmlElementView(viewType: _viewType));
+    return SizedBox(width: widget.width, height: widget.height, child: HtmlElementView(viewType: _viewType!));
   }
 }

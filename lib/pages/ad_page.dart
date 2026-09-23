@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 import '../theme/app_colors.dart';
 import '../config/app_config.dart';
 import '../models/scheme_item.dart';
+import '../platform/ad_iframe_registrar.dart';
 import 'detail_page.dart';
 
 // Scheme card pe click hone ke baad ye ad page dikhti hai. 5 second
@@ -22,49 +22,20 @@ class _AdPageState extends State<AdPage> {
   static const int _adSeconds = 5;
   int _secondsLeft = _adSeconds;
   Timer? _timer;
-  late final String _viewType;
+  String? _viewType;
   bool _dialogShown = false;
 
   @override
   void initState() {
     super.initState();
-    _viewType = 'adsterra-banner-${DateTime.now().microsecondsSinceEpoch}';
-    _registerAdView();
+    if (kIsWeb) {
+      _viewType = registerAdIframeView(
+        zoneKey: kAdsterraZoneKey,
+        width: 300,
+        height: 250,
+      );
+    }
     _startCountdown();
-  }
-
-  void _registerAdView() {
-    ui_web.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
-      final iframe = html.IFrameElement()
-        ..style.border = 'none'
-        ..style.width = '300px'
-        ..style.height = '250px'
-        ..srcdoc = '''
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  html, body { margin:0; padding:0; background:transparent; display:flex;
-    align-items:center; justify-content:center; overflow:hidden; }
-</style>
-</head>
-<body>
-<script type="text/javascript">
-  atOptions = {
-    'key' : '$kAdsterraZoneKey',
-    'format' : 'iframe',
-    'height' : 250,
-    'width' : 300,
-    'params' : {}
-  };
-</script>
-<script type="text/javascript" src="https://www.highperformanceformat.com/$kAdsterraZoneKey/invoke.js"></script>
-</body>
-</html>
-''';
-      return iframe;
-    });
   }
 
   void _startCountdown() {
@@ -116,7 +87,13 @@ class _AdPageState extends State<AdPage> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(color: Colors.white.withOpacity(0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white24)),
                 alignment: Alignment.center,
-                child: SizedBox(width: innerWidth, height: innerHeight, child: HtmlElementView(viewType: _viewType)),
+                child: SizedBox(
+                  width: innerWidth,
+                  height: innerHeight,
+                  child: (kIsWeb && _viewType != null)
+                      ? HtmlElementView(viewType: _viewType!)
+                      : const SizedBox.shrink(),
+                ),
               ),
               SizedBox(height: 3.2.h),
               SizedBox(

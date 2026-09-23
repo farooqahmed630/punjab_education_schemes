@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sizer/sizer.dart';
 import '../theme/app_colors.dart';
 import '../models/scheme_item.dart';
 import '../utils/link_utils.dart';
@@ -15,78 +14,155 @@ class DetailPage extends StatelessWidget {
       backgroundColor: kBg,
       appBar: AppBar(
         backgroundColor: kPrimaryGreen,
-        title: Text(item.title, style: TextStyle(color: Colors.white, fontSize: 16.sp)),
+        title: Text(
+          item.title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16.0,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Center(
+      body: Align(
+        alignment: const Alignment(0.10, 0.0),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
+          constraints: const BoxConstraints(maxWidth: 580),
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 5.3.w, vertical: 2.5.h),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Top Icon / Banner Container
                 Container(
                   width: double.infinity,
-                  height: 20.9.h,
+                  height: 170,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [kPrimaryGreen.withOpacity(0.12), kGold.withOpacity(0.12)]),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        kPrimaryGreen.withOpacity(0.12),
+                        kGold.withOpacity(0.12),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   alignment: Alignment.center,
-                  child: Icon(item.icon, size: 64.sp, color: kPrimaryGreen),
+                  child: Icon(item.icon, size: 64, color: kPrimaryGreen),
                 ),
-                SizedBox(height: 2.7.h),
-                Text(item.title, style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: kDarkGreen)),
-                SizedBox(height: 1.5.h),
-                Text(item.fullDetail, style: TextStyle(fontSize: 14.sp, height: 1.6, color: Colors.black87)),
-                SizedBox(height: 3.h),
+
+                const SizedBox(height: 22),
+
+                // Title
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontSize: 22.0,
+                    fontWeight: FontWeight.bold,
+                    color: kDarkGreen,
+                    letterSpacing: 0.2,
+                    fontFamily: 'Roboto',
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Full Details Text
+                Text(
+                  item.fullDetail,
+                  style: const TextStyle(
+                    fontSize: 15.0,
+                    height: 1.6,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Roboto',
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Disclaimer Info Box
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.symmetric(horizontal: 3.7.w, vertical: 1.7.h),
-                  decoration: BoxDecoration(color: kGold.withOpacity(0.12), borderRadius: BorderRadius.circular(12), border: Border.all(color: kGold.withOpacity(0.4))),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: kGold.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: kGold.withOpacity(0.4)),
+                  ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.info_outline_rounded, color: kGold),
-                      SizedBox(width: 2.7.w),
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2),
+                        child: Icon(Icons.info_outline_rounded, color: kGold, size: 20),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Eligibility aur apply karne ka tareeqa Punjab Govt ki official website se verify karen — details waqt ke sath update hoti rehti hain.',
-                          style: TextStyle(fontSize: 11.5.sp, color: kDarkGreen),
+                          style: const TextStyle(
+                            fontSize: 12.0,
+                            color: kDarkGreen,
+                            height: 1.45,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 2.2.h),
+
+                const SizedBox(height: 24),
+
+                // Official Website Button
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: kPrimaryGreen,
-                      side: const BorderSide(color: kPrimaryGreen),
-                      padding: EdgeInsets.symmetric(vertical: 1.7.h),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      side: const BorderSide(color: kPrimaryGreen, width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                    icon: Icon(Icons.open_in_new_rounded, size: 18.sp),
-                    label: const Text('Official Website Par Jayen'),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                    label: const Text(
+                      'Official Website Par Jayen',
+                      style: TextStyle(fontSize: 14.0, fontWeight: FontWeight.bold),
+                    ),
                     onPressed: () => openOfficialLink(context, item.officialUrl),
                   ),
                 ),
-                SizedBox(height: 1.5.h),
+
+                const SizedBox(height: 12),
+
+                // Back to Home Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kPrimaryGreen,
                       foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 2.h),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
                     ),
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const HomePage()), (route) => false);
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HomePage()),
+                        (route) => false,
+                      );
                     },
-                    child: Text('Home pe wapas jayen', style: TextStyle(fontSize: 14.sp)),
+                    child: const Text(
+                      'Home pe wapas jayen',
+                      style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
               ],

@@ -24,9 +24,10 @@ class SiteFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomSafeArea = MediaQuery.of(context).padding.bottom;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 5.3.w, vertical: 3.h),
+      padding: EdgeInsets.fromLTRB(5.3.w, 3.h, 5.3.w, 3.h + bottomSafeArea),
       decoration: const BoxDecoration(
         gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [kPrimaryGreen, kDarkGreen]),
       ),

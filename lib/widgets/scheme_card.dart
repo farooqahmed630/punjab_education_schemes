@@ -39,35 +39,41 @@ class SchemeCard extends StatelessWidget {
             debugPrint('[PERF] SchemeCard "${item.title}" cell constraints: '
                 '${constraints.maxWidth.toStringAsFixed(1)} x ${constraints.maxHeight.toStringAsFixed(1)}');
           }
-          return _buildCard(context, constraints.maxWidth);
+          // FIX (BLUR ROOT CAUSE, take 2): pehle yahan sirf maxWidth pass
+          // hota tha aur neeche FittedBox(scaleDown) puri Column ko
+          // (including text) ek Transform-scale matrix se fit karta tha.
+          // Chahe font size ab cellWidth-based ho gaya ho, baaqi content
+          // (image size, padding, spacing) ab bhi Sizer ke .h/.w se aata
+          // — yani SCREEN ke % se — jabke cell ki apni height alag hoti
+          // hai (khaas kar mobile/1-column mode mein, jahan cell bohot
+          // tall ho jata hai). Is mismatch ki wajah se FittedBox ka scale
+          // factor kabhi bhi bilkul 1.0 nahi ban pata — aur jab tak text
+          // kisi bhi Transform-scale ke andar hai (chahe 0.97x hi sahi),
+          // browser use apne NATIVE pixel size par render nahi karta,
+          // hamesha thora blur rahega. Isi liye FittedBox ko yahan se
+          // hata diya gaya hai (neeche dekhein) — ab maxHeight bhi pass
+          // kar rahe hain taake Column apni available height ke andar
+          // khud fit ho (Expanded + overflow:ellipsis se), kisi scale
+          // matrix ki zaroorat hi na pare.
+          return _buildCard(context, constraints.maxWidth, constraints.maxHeight);
         },
       ),
     );
   }
 
-  Widget _buildCard(BuildContext context, double cellWidth) {
-    // Image aur text ki width ab is cell ki actual width ke % se nikalti
-    // hai (screen width ke % se nahi) — is liye single-column (poori
-    // width) card par image bhi bari aur text bhi poori chaudi (wide)
-    // dikhega, aur multi-column grid mein bhi apne chhote cell ke
-    // hisaab se sahi proportion mein fit hoga.
-    // Image ab thori bari (0.62 -> 0.78 of cell width).
-    final double imageSize = cellWidth * 0.78;
-    final double textWidth = cellWidth * 0.92;
-
-    // FIX: pehle kIsWeb se font size decide hoti thi — lekin kIsWeb sirf
-    // itna batata hai ke build "web" hai ya "native app", ye nahi ke
-    // screen chhoti (phone) hai ya bari (desktop). Jab website ko phone
-    // ke browser mein khola jata, wahan bhi kIsWeb=true hi rehta hai —
-    // is liye phone (mobile web) par bhi hamesha "web" wale chhote font
-    // dikhte thay, size change ka asar nahi hota tha. Ab asal SCREEN
-    // WIDTH check kar rahe hain (wahi breakpoint jo grid ke columns
-    // decide karta hai) — chahe app ho ya browser, chhoti (phone-width)
-    // screen par bara font, bari (desktop) screen par chhota font.
+  Widget _buildCard(BuildContext context, double cellWidth, double cellHeight) {
+    // BLUR FIX (final): font sizes ab fixed (device-independent-pixel)
+    // values hain, cellWidth par depend nahi karte — taake grid
+    // resize/column-change ke dauran font achanak bara/chota na ho
+    // (jaisa debug logs mein cell constraints baar baar badalte dikhe
+    // the: 928 -> 559 -> 3202 -> 2.3). Image aur spacing ab `Expanded`
+    // aur fixed gaps se aate hain, FittedBox scale ki zaroorat hi khatam
+    // ho gayi hai (upar build() mein dekhein) — is liye text hamesha
+    // apne native pixel size par render hota hai, crisp rehta hai.
     final bool isNarrowScreen = MediaQuery.of(context).size.width < kMobileBreakpoint;
-    final double titleFontSize = isNarrowScreen ? 27.sp : 18.sp;
-    final double descFontSize = isNarrowScreen ? 20.sp : 14.sp;
-    final double buttonFontSize = isNarrowScreen ? 24.sp : 15.sp;
+    final double titleFontSize = isNarrowScreen ? 17.0 : 15.0;
+    final double descFontSize = isNarrowScreen ? 13.5 : 12.0;
+    final double buttonFontSize = isNarrowScreen ? 14.5 : 13.0;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(18),
@@ -86,80 +92,77 @@ class SchemeCard extends StatelessWidget {
             boxShadow: [BoxShadow(color: kDarkGreen.withOpacity(0.08), blurRadius: 6, offset: const Offset(0, 3))],
           ),
           child: Padding(
-            // Vertical padding thori kam kar di (1.4.h -> 0.7.h) — margin
-            // thora tight, lekin ab bhi content top/bottom edge se
-            // bilkul chipka hua nahi.
-            padding: EdgeInsets.symmetric(horizontal: 2.7.w, vertical: 0.7.h),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Agar item.imageAsset diya gaya hai (jaise pehle card
-                  // mein test ke liye) to wahi image dikhti hai; warna
-                  // wapas normal gradient placeholder box.
-                  ClipRRect(
+            // Vertical padding thodi badha di gayi hai taake content
+            // (image/title/desc/button) card ke top aur bottom edge se
+            // ek acha visible margin rakhe, chipka hua na lage.
+            padding: EdgeInsets.symmetric(horizontal: 2.7.w, vertical: 1.6.h),
+            // OVERFLOW FIX: pehle image ek FIXED AspectRatio (1.05) mein
+            // thi. Wo desktop/preview ke bare cell (347px+ tall) par theek
+            // dikhti thi, lekin real phone par 1-column grid ka cell
+            // sirf ~347px tall nikla aur fixed-size image + title + desc
+            // + divider + button sab milakar us se zyada height maang
+            // rahe the — isi liye "RenderFlex overflowed by 116 pixels"
+            // error aata tha.
+            //
+            // Fix: image ab `Expanded` mein hai (fixed AspectRatio nahi)
+            // — Column pehle title/desc/divider/button ki (fixed,
+            // chhoti) height reserve karta hai, aur JO BHI height bachti
+            // hai wahi image ko milti hai. Is tarah total height hamesha
+            // == available cell height rehti hai — chahe cell 250px tall
+            // ho ya 700px, card kabhi overflow nahi karega.
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Expanded(
+                  child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: (item.imageAsset != null && item.imageAsset!.isNotEmpty)
                         ? Image.asset(
                             item.imageAsset!,
-                            width: imageSize,
-                            height: imageSize,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                             // Chhoti size par hi decode — grid mein bohot
                             // saare cards hote hain, full-res decode se
                             // scroll slow ho sakti hai.
                             cacheWidth: 320,
                             cacheHeight: 320,
                             errorBuilder: (_, __, ___) => Container(
-                              width: imageSize * 0.48,
-                              height: imageSize * 0.48,
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [kPrimaryGreen.withOpacity(0.14), kGold.withOpacity(0.14)]),
                               ),
                               alignment: Alignment.center,
-                              child: Icon(Icons.broken_image_rounded, color: kPrimaryGreen, size: 28.sp),
+                              child: const Icon(Icons.broken_image_rounded, color: kPrimaryGreen, size: 28),
                             ),
                           )
                         : Container(
-                            width: imageSize * 0.2,
-                            height: imageSize * 0.2,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [kPrimaryGreen.withOpacity(0.14), kGold.withOpacity(0.14)]),
                             ),
                           ),
                   ),
-                  SizedBox(height: 4.h),
-                  SizedBox(
-                    width: textWidth,
-                    child: Text(
-                      item.title,
-                      textAlign: TextAlign.center,
-                      // Font size pehle 20.5.sp thi — bohot bari, jis
-                      // wajah se FittedBox ko bohot zyada scale-down
-                      // karna padta tha (blur + slow scroll ki wajah).
-                      // Sensible size par le aaya.
-                      style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.w900, color: kDarkGreen),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  SizedBox(height: 0.6.h),
-                  SizedBox(
-                    width: textWidth,
-                    child: Text(
-                      item.shortDesc,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: descFontSize, fontWeight: FontWeight.w700, color: Colors.black54, height: 1.3),
-                    ),
-                  ),
-                  SizedBox(height: 0.7.h),
-                  Container(height: 1, width: 6.4.w, color: kGold.withOpacity(0.5)),
-                  SizedBox(height: 1.7.h),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 5.3.w, vertical: 1.1.h),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  item.title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.w900, color: kDarkGreen),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.shortDesc,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: descFontSize, fontWeight: FontWeight.w700, color: Colors.black54, height: 1.3),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Center(child: Container(height: 1, width: 46, color: kGold.withOpacity(0.5))),
+                const SizedBox(height: 8),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                     decoration: BoxDecoration(
                       color: kPrimaryGreen,
                       borderRadius: BorderRadius.circular(30),
@@ -169,8 +172,8 @@ class SchemeCard extends StatelessWidget {
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: buttonFontSize),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

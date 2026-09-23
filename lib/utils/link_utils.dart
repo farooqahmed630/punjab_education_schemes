@@ -1,11 +1,12 @@
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../platform/link_opener.dart';
 
-// Official website ka link kholta hai (naya browser tab). Flutter WEB
-// specific — dart:html.window.open use karta hai. Agar url khali ho
-// ya invalid ho to SnackBar se user ko bata deta hai.
-void openOfficialLink(BuildContext context, String url) {
+// Official website ka link kholta hai. Web par naya tab khulta hai
+// (dart:html), phone app par external browser khulta hai (url_launcher).
+// NOTE: phone build ke liye pubspec.yaml mein `url_launcher` add karna
+// hoga: `flutter pub add url_launcher`
+Future<void> openOfficialLink(BuildContext context, String url) async {
   debugPrint('[openOfficialLink] pressed. url="$url"');
 
   if (url.trim().isEmpty) {
@@ -22,14 +23,13 @@ void openOfficialLink(BuildContext context, String url) {
     return;
   }
   try {
-    final newWindow = html.window.open(url, '_blank');
-    if (newWindow == null) {
-      html.window.location.href = url;
-    }
+    await tryOpenLink(url);
   } catch (e, st) {
     debugPrint('[openOfficialLink] ERROR: $e\n$st');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Link kholte waqt error aayi: $e'), backgroundColor: Colors.redAccent),
-    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Link kholte waqt error aayi: $e'), backgroundColor: Colors.redAccent),
+      );
+    }
   }
 }
